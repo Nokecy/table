@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import { connect } from 'mini-store';
+import polyfill from 'react-lifecycles-compat';
 import TableCell from './TableCell';
 import { warningOnce } from './utils';
 
@@ -55,21 +56,27 @@ class TableRow extends React.Component {
     renderExpandIconCell() {},
   }
 
-  constructor(props) {
-    super(props);
-
-    this.shouldRender = props.visible;
-  }
-
-  componentDidMount() {
-    if (this.shouldRender) {
-      this.saveRowRef();
+  static getDerivedStateFromProps(nextProps, prevState) {
+    if (prevState.visible || (!prevState.visible && nextProps.visible)) {
+      return {
+        shouldRender: true,
+        visible: nextProps.visible,
+      }
+    }
+    return {
+      visible: nextProps.visible,
     }
   }
 
-  componentWillReceiveProps(nextProps) {
-    if (this.props.visible || (!this.props.visible && nextProps.visible)) {
-      this.shouldRender = true;
+  constructor(props) {
+    super(props);
+
+    this.state = {};
+  }
+
+  componentDidMount() {
+    if (this.state.shouldRender) {
+      this.saveRowRef();
     }
   }
 
@@ -78,7 +85,7 @@ class TableRow extends React.Component {
   }
 
   componentDidUpdate() {
-    if (this.shouldRender && !this.rowRef) {
+    if (this.state.shouldRender && !this.rowRef) {
       this.saveRowRef();
     }
   }
@@ -172,7 +179,7 @@ class TableRow extends React.Component {
   }
 
   render() {
-    if (!this.shouldRender) {
+    if (!this.state.shouldRender) {
       return null;
     }
 
@@ -277,6 +284,8 @@ function getRowHeight(state, props) {
 
   return null;
 }
+
+polyfill(TableRow);
 
 export default connect((state, props) => {
   const { currentHoverKey, expandedRowKeys } = state;

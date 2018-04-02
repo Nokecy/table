@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'mini-store';
+import polyfill from 'react-lifecycles-compat';
 import TableRow from './TableRow';
 import { remove } from './utils';
 
@@ -70,10 +71,10 @@ class ExpandableTable extends React.Component {
     });
   }
 
-  componentWillReceiveProps(nextProps) {
-    if ('expandedRowKeys' in nextProps) {
+  componentDidUpdate() {
+   if ('expandedRowKeys' in this.props) {
       this.store.setState({
-        expandedRowKeys: nextProps.expandedRowKeys,
+        expandedRowKeys: this.props.expandedRowKeys,
       });
     }
   }
@@ -219,5 +220,7 @@ class ExpandableTable extends React.Component {
     });
   }
 }
+
+polyfill(ExpandableTable);
 
 export default connect()(ExpandableTable);

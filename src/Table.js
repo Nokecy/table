@@ -5,14 +5,15 @@ import shallowequal from 'shallowequal';
 import addEventListener from 'rc-util/lib/Dom/addEventListener';
 import { Provider, create } from 'mini-store';
 import merge from 'lodash/merge';
-import ColumnManager from './ColumnManager';
 import classes from 'component-classes';
+import polyfill from 'react-lifecycles-compat';
+import ColumnManager from './ColumnManager';
 import HeadTable from './HeadTable';
 import BodyTable from './BodyTable';
 import FootTable from './FootTable';
 import ExpandableTable from './ExpandableTable';
 
-export default class Table extends React.Component {
+class Table extends React.Component {
   static propTypes = {
     data: PropTypes.array,
     useFixedHeader: PropTypes.bool,
@@ -80,6 +81,23 @@ export default class Table extends React.Component {
     emptyText: () => 'No Data',
   }
 
+  static getDerivedStateFromProps(nextProps, prevState) {
+    if (nextProps.columns && nextProps.columns !== prevState.columns) {
+      return {
+        columnsChange: true,
+        childrenChange: false,
+        columns: nextProps.columns,
+      }
+    } else if (nextProps.children !== prevState.children) {
+      return {
+        columnsChange: false,
+        childrenChange: true,
+        children: nextProps.children,
+      }
+    }
+    return null;
+  }
+
   constructor(props) {
     super(props);
 
@@ -113,6 +131,8 @@ export default class Table extends React.Component {
     this.setScrollPosition('left');
 
     this.debouncedWindowResize = debounce(this.handleWindowResize, 150);
+
+    this.state = {};
   }
 
   getChildContext() {
@@ -149,14 +169,6 @@ export default class Table extends React.Component {
       this.resizeEvent = addEventListener(
         window, 'resize', this.debouncedWindowResize
       );
-    }
-  }
-
-  componentWillReceiveProps(nextProps) {
-    if (nextProps.columns && nextProps.columns !== this.props.columns) {
-      this.columnManager.reset(nextProps.columns);
-    } else if (nextProps.children !== this.props.children) {
-      this.columnManager.reset(null, nextProps.children);
     }
   }
 
@@ -467,6 +479,13 @@ export default class Table extends React.Component {
     const props = this.props;
     const prefixCls = props.prefixCls;
 
+    const { columnsChange, childrenChange } = this.state;
+    if (columnsChange) {
+      this.columnManager.reset(props.columns);
+    } else if (childrenChange) {
+      this.columnManager.reset(null, props.children);
+    }
+
     let className = props.prefixCls;
     if (props.className) {
       className += ` ${props.className}`;
@@ -512,3 +531,7 @@ export default class Table extends React.Component {
     );
   }
 }
+
+polyfill(Table);
+
+export default  Table;
